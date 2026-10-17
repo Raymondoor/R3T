@@ -33,6 +33,13 @@ class SettleOperation extends Operation{
         $this->tableColumns = is_array($columns) ? $columns : [$columns];
         return $this;
     }
+    /**
+     * Set data type of values. tpes as in PHP primitive types, not SQL types
+     */
+    public function withTypes(array $types):self{
+        $this->dataTypes = $types;
+        return $this;
+    }
     public static function from(Operation $previousOperation):self{
         $o = new self();
         $o->id = OperationManager::generateId();
@@ -57,8 +64,10 @@ class SettleOperation extends Operation{
         return $this->tableColumns;
     }
     public function transform(iterable $data):iterable{
+        // @todo if column name exist in $this->dataType, run typeval() to change, and keep structure
         foreach($data as $row){
-            yield $row;
+            $adjustedRow = []; // du stuff
+            yield $adjustedRow;
         }
     }
 }

@@ -90,9 +90,6 @@ abstract class Database{
 	public static function rollback():bool{
 		return static::getConnection()->rollBack();
 	}
-	/**
-     * @todo not fully implemented yet. remaining: mysql
-     */
 	public static function selectColumns(string $table):array{
 		return match(static::$driver){
 			'sqlite' => static::sanitizeSelectColumnsSqlite($table),
@@ -124,7 +121,6 @@ abstract class Database{
 		return $sanitized;
 	}
 	public static function sanitizeSelectColumnsMysql(string $table):array{
-		// @todo not tested yet
 		$raw = static::select("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='".$table."'");
 		if($raw === []){
 			throw new R3TException("Table '$table' does not exist in the database.");

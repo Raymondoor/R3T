@@ -12,8 +12,9 @@ class CreateTableQueryBuilder{
     public function createQuery():void{
         $enc = DBQueryFormatter::getEncapsulation($this->config->driver);
         $this->query = 'CREATE TABLE IF NOT EXISTS '.$enc.$this->config->tablename.$enc.' (';
+        $type = DBQueryFormatter::getTextType($this->config->driver);
         foreach($this->config->columns as $column){
-            $this->query .= $enc.$column.$enc.',';
+            $this->query .= $enc.$column.$enc.(empty($type) ? '' : ' '.$type).',';
         }
         $this->query = rtrim($this->query,",");
         $this->query .= ")";

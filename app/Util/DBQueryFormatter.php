@@ -36,4 +36,14 @@ class DBQueryFormatter{
         return self::wrapWithEncapsulation($data,self::getEncapsulation($driver));
 
     }
+    public static function getTextType(string $driver):string{
+        if($driver === 'sqlite'){
+            return ''; // Type Affinity
+        }elseif($driver === 'mysql'){
+            return 'LONGTEXT';
+        }elseif($driver === 'pgsql'){
+            return 'TEXT';
+        }
+        return 'VARCHAR';
+    }
 }

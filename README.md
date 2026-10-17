@@ -61,7 +61,7 @@ $settleUser = $opr::register(SettleOperation::from($usersFinal)->settle('users')
 
 var_dump(R3T::analyze()); // array of operations' query
 R3T::createTables(true); // creates intermediate tables. does not touch actual data yet.
-R3T::transfer(); // execute the transfer apart from settling to new DB
+R3T::transform(); // execute the transfer apart from settling to new DB
 R3T::settle(); // finalize the transfer and insert to the new DB.
 ```
 

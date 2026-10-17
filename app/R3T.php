@@ -184,7 +184,7 @@ class R3T{
      * @todo not implemented yet correctly
      */
     public static function execute():bool{
-        self::transfer(); // includes `self::createTables()`
+        self::transform(); // includes `self::createTables()`
         self::settle();
         return true;
     }

@@ -26,9 +26,7 @@ The intended workflow is to configure these databases, register a sequence of op
 
 The current code supports configuration of PDO connections and can analyze a registered operation sequence into generated SQL. It can also create intermediate tables in the operational database. These capabilities are primarily preparation and planning infrastructure; they do not yet amount to an end-to-end migration runner.
 
-The public `transfer()`, `settle()`, and `execute()` methods are placeholders. Some operation implementations and database-driver metadata queries are also unfinished. Consequently, a generated plan or created staging table should not be taken as evidence that data has been transferred to the target.
-
-Database-driver behavior is not yet uniform. SQLite metadata discovery has implementation, while the MySQL and PostgreSQL metadata paths are marked unfinished. The SQL generation and schema handling should therefore be treated as early-stage and subject to change.
+Database-driver behavior is not yet uniform. SQLite metadata discovery has implementation, while some MySQL and PostgreSQL metadata paths are marked unfinished. The SQL generation and schema handling should therefore be treated as early-stage and subject to change.
 
 ## Documentation Scope
 

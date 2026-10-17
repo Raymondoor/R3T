@@ -1,6 +1,6 @@
 {
     "name": "raymondoor/r3t",
-    "description": "A PHP data migration tool.",
+    "description": "A PHP Relational Data Transformation and Transfer Tool.",
     "version": "0.6",
     "type": "library",
     "keywords": ["R3T", "migration", "data", "transfer", "database", "sql"],

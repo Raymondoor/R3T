@@ -1,5 +1,8 @@
 <?php declare(strict_types=1);
 namespace R3T\Operation;
+
+use R3T\Database\OprDB;
+use R3T\Util\DBQueryFormatter;
 use R3T\Exception\R3TException;
 class RenameOperation extends Operation{
     public array $modifications;
@@ -32,16 +35,17 @@ class RenameOperation extends Operation{
         return $columns;
     }
     public function selectQueryFromPrevious():string{
+        $encapsulation = DBQueryFormatter::getEncapsulation(OprDB::$driver);
         $previous = $this->previousOperation->tableConfig->columns;
         $selects = [];
         foreach($previous as $column){
             if(array_key_exists($column, $this->modifications)){
-                $selects[] = '"'.$column.'" AS "'.$this->modifications[$column].'"';
+                $selects[] = $encapsulation.$column.$encapsulation.' AS '.$encapsulation.$this->modifications[$column].$encapsulation;
             }else{
                 $selects[] = '"'.$column.'"';
             }
         }
-        return 'SELECT '.implode(',', $selects).' FROM "'.$this->previousOperation->tableConfig->tablename.'"';
+        return 'SELECT '.implode(',', $selects).' FROM '.$encapsulation.$this->previousOperation->tableConfig->tablename.$encapsulation;
     }
     public function transform(iterable $data):iterable{
         foreach($data as $row){

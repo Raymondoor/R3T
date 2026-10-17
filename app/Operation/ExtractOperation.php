@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 namespace R3T\Operation;
-use R3T\Database\SrcDB;
+use R3T\Database\OprDB;
 use R3T\Util\DBQueryFormatter;
 class ExtractOperation extends Operation{
     public array $columns;
@@ -27,8 +27,8 @@ class ExtractOperation extends Operation{
         return $this->columns;
     }
     public function selectQueryFromPrevious():string{
-        $columns = DBQueryFormatter::wrapWithEncapsulationOnDriver($this->columns, SrcDB::$driver);
-        return 'SELECT '.implode(',', $columns).' FROM "'.$this->previousOperation->tableConfig->tablename.'"';
+        $columns = DBQueryFormatter::wrapWithEncapsulationOnDriver($this->columns, OprDB::$driver);
+        return 'SELECT '.implode(',', $columns).' FROM '.DBQueryFormatter::getEncapsulation(OprDB::$driver).$this->previousOperation->tableConfig->tablename.DBQueryFormatter::getEncapsulation(OprDB::$driver);
     }
     public function transform(iterable $data):iterable{
         foreach($data as $row){

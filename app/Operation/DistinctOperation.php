@@ -1,5 +1,8 @@
 <?php declare(strict_types=1);
 namespace R3T\Operation;
+
+use R3T\Database\OprDB;
+use R3T\Util\DBQueryFormatter;
 class DistinctOperation extends Operation{
     public string $column;
     /**
@@ -23,7 +26,8 @@ class DistinctOperation extends Operation{
         return [$this->column];
     }
     public function selectQueryFromPrevious():string{
-        return 'SELECT DISTINCT "'.$this->column.'" FROM "'.$this->previousOperation->tableConfig->tablename.'"';
+        $encapsulation = DBQueryFormatter::getEncapsulation(OprDB::$driver);
+        return 'SELECT DISTINCT '.$encapsulation.$this->column.$encapsulation.' FROM '.$encapsulation.$this->previousOperation->tableConfig->tablename.$encapsulation;
     }
     public function transform(iterable $data):iterable{
         foreach($data as $row){

@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace R3T\Database;
 use R3T\Exception\R3TException;
+use R3T\Util\DBQueryFormatter;
 /**
  * Static PDO wrapper to execute queries easily.
  */
@@ -18,7 +19,7 @@ class OprDB extends Database{
 	public static function dropAllTables():bool{
 		$tables = self::selectAllTables();
 		foreach($tables as $table){
-			self::exec("DROP TABLE IF EXISTS ".$table);
+			self::exec("DROP TABLE IF EXISTS ".DBQueryFormatter::getEncapsulation(static::$driver).$table.DBQueryFormatter::getEncapsulation(static::$driver));
 		}
 		return true;
 	}

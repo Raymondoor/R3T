@@ -132,7 +132,7 @@ abstract class Database{
 		return $sanitized;
 	}
 	/**
-     * @todo not fully implemented yet. remaining: mysql, pgsql
+     * @todo not fully implemented yet. remaining: pgsql
      */
     public static function selectAllTables():array{
 		return match(static::$driver){
@@ -155,7 +155,6 @@ abstract class Database{
 		return [];
 	}
 	public static function sanitizeSelectTablessMysql():array{
-		// @todo not fully tested yet
 		$raw = static::select("SELECT TABLE_NAME FROM information_schema.TABLES");
 		foreach($raw as $table){
 			$sanitized[] = $table['TABLE_NAME'];

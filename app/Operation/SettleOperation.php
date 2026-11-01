@@ -67,7 +67,7 @@ class SettleOperation extends Operation{
         // @todo if column name exist in $this->dataType, run typeval() to change, and keep structure
         foreach($data as $row){
             $adjustedRow = []; // du stuff
-            yield $adjustedRow;
+            yield $row;
         }
     }
 }

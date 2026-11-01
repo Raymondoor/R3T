@@ -59,7 +59,7 @@ class SettleOperation extends Operation{
         sort($sourceColumns, SORT_STRING);
         sort($targetColumns, SORT_STRING);
         if($sourceColumns !== $targetColumns){
-            throw new \R3T\Exception\R3TValueException("Cannot settle to target table, column names seems to not match.");
+            throw new \R3T\Exception\R3TValueException("Cannot settle to table, column names do not match.");
         }
         return $this->tableColumns;
     }

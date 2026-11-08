@@ -66,7 +66,7 @@ abstract class Database{
 	 */
 	public static function select(string $query, array $params = []):array{
 		$statement = static::run($query,$params);
-		return $statement->fetchAll();
+		return $statement->fetchAll(self::$options[\PDO::ATTR_DEFAULT_FETCH_MODE]);
 	}
 	/**
 	 * Returns DB data with `yield` using `fetch()`
@@ -75,7 +75,7 @@ abstract class Database{
 	 */
 	public static function selectUnbuffered(string $query, array $params = []):\Generator{
 		$statement = static::run($query,$params);
-		while($data = $statement->fetch(\PDO::FETCH_ASSOC)){
+		while($data = $statement->fetch(self::$options[\PDO::ATTR_DEFAULT_FETCH_MODE])){
 			yield $data;
 		}
 	}

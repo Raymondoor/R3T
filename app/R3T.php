@@ -27,7 +27,7 @@ class R3T{
         SrcDB::$dsn = $dsn;
         SrcDB::$user = $user;
         SrcDB::$pass = $pass;
-        SrcDB::$options = array_merge(SrcDB::$options, $options);
+        SrcDB::$options = SrcDB::$options + $options;
         self::$isSrcDBSet = true;
     }
     public static function setOperationalDB(string $driver, string $dsn, string $user = '', string $pass = '', array $options = []):void{
@@ -35,7 +35,7 @@ class R3T{
         OprDB::$dsn = $dsn;
         OprDB::$user = $user;
         OprDB::$pass = $pass;
-        OprDB::$options = array_merge(OprDB::$options, $options);
+        OprDB::$options = OprDB::$options + $options;
         self::$isOprDBSet = true;
     }
     public static function setTargetDB(string $driver, string $dsn, string $user = '', string $pass = '', array $options = []):void{
@@ -43,7 +43,7 @@ class R3T{
         TrgtDB::$dsn = $dsn;
         TrgtDB::$user = $user;
         TrgtDB::$pass = $pass;
-        TrgtDB::$options = array_merge(TrgtDB::$options, $options);
+        TrgtDB::$options = TrgtDB::$options + $options;
         self::$isTrgtDBSet = true;
     }
     public static function connectDBs(bool $src = true, bool $opr = true, bool $trgt = true):void{

@@ -1,6 +1,5 @@
 <?php declare(strict_types=1);
 namespace R3T\Operation;
-
 use R3T\Database\SrcDB;
 use R3T\Util\DBQueryFormatter;
 /**
@@ -43,7 +42,10 @@ class CaptureOperation extends Operation{
         return $this->tableColumns;
     }
     public function selectQueryFromPrevious():string{
-        return 'SELECT * FROM '.DBQueryFormatter::getEncapsulation(SrcDB::$driver).$this->table.DBQueryFormatter::getEncapsulation(SrcDB::$driver);
+        if(!$this->temporaryConfiguration){
+            return 'SELECT * FROM '.DBQueryFormatter::getEncapsulation(SrcDB::$driver).$this->table.DBQueryFormatter::getEncapsulation(SrcDB::$driver);
+        }
+        return 'SELECT * FROM '.$this->table;
     }
     public function transform(iterable $data):iterable{
         foreach($data as $row){

@@ -20,13 +20,22 @@ class SettleOperation extends Operation{
      */
     public function setTableConfiguration():void{
         $this->tableConfig = new TableConfiguration($this->table, $this->validateThenGenerateColumns());
-        $this->tableConfig->setDriver(TrgtDB::$driver);
+        $this->tableConfig->setDriver($this->temporaryConfiguration? null : TrgtDB::$driver);
         $this->tableConfig->setInsert();
     }
+    /**
+     * Settle to an existing target table
+     * @param string $table tablename
+     */
     public function settle(string $table):self{
         $this->table = $table;
         return $this;
     }
+    /**
+     * Create a virtual settle target.
+     * @param string $table fake target table name
+     * @param array|string $columns fake target columns
+     */
     public function settleColumns(string $table, array|string $columns):self{
         $this->temporaryConfiguration = true;
         $this->table = $table;
@@ -51,7 +60,7 @@ class SettleOperation extends Operation{
     }
     public function validateThenGenerateColumns():array{
         $columns = $this->previousOperation->tableConfig->columns;
-        if($this->temporaryConfiguration === false){
+        if(!$this->temporaryConfiguration){
             $this->setColumnsFromTable();
         }
         $sourceColumns = $columns;

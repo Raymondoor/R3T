@@ -14,7 +14,12 @@ class TableConfiguration{
         public string $tablename,
         public array $columns
     ){}
-    public function setDriver(string $driver):void{
+    /**
+     * Set driver for the program to manage encapsulation
+     * @param string|null $driver `null` will resolve to sqlite
+     */
+    public function setDriver(?string $driver = null):void{
+        if(is_null($driver))$driver = 'sqlite';
         $this->driver = $driver;
     }
     public function setCreate():void{

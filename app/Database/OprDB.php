@@ -7,7 +7,10 @@ use R3T\Util\DBQueryFormatter;
  */
 class OprDB extends Database{
 	public static \PDO $connection;
-	public static string $driver;
+	/**
+	 * @todo [2026/11/09 from:torhc17311@gmail.com to:all] Initialized string for non-connected running. A bit inconsistent? Room for improvements
+	 */
+	public static string $driver = '';
 	public static string $dsn;
 	public static string $user;
 	public static string $pass;

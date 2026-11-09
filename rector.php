@@ -1,5 +1,6 @@
 <?php declare(strict_types=1);
 use Rector\CodeQuality\Rector\If_\CompleteMissingIfElseBracketRector;
+use Rector\CodingStyle\Rector\If_\AlternativeIfToBracketRector;
 use Rector\Config\RectorConfig;
 use Rector\CodingStyle\Rector\Catch_\CatchExceptionNameMatchingTypeRector;
 use Rector\CodingStyle\Rector\ClassLike\NewlineBetweenClassLikeStmtsRector;
@@ -20,8 +21,9 @@ return RectorConfig::configure()
         CatchExceptionNameMatchingTypeRector::class,
         RemoveAlwaysElseRector::class,
         CompleteMissingIfElseBracketRector::class,
+        AlternativeIfToBracketRector::class,
     ])
-    ->withPhpSets(php84:true)
+    ->withPhpSets(php83:true)
     ->withPreparedSets(
         codeQuality: true,
         codingStyle: true,

@@ -32,22 +32,26 @@ class JoinOperation extends Operation{
      * @param 'left'|'inner'|'right'|'full'|'self' $direction
      */
     public function direction(string $direction = 'LEFT'):self{
-        // make sure direction is valid
-        $validDirections = ['LEFT', 'INNER', 'RIGHT', 'FULL', 'SELF'];
-        if(!in_array(strtoupper($direction), $validDirections, true)){
-            throw new R3TException("Invalid join direction '$direction'. Valid directions are: ".implode(', ', $validDirections));
-        }
         $this->direction = strtoupper($direction);
         return $this;
     }
     public function validateThenGenerateColumns():array{
-        if(!$this->previousOperation::columnExists($this->previousOperation->tableConfig->columns, [$this->sourceColumn])){
-            throw new \R3T\Exception\R3TValueException("Join source column does not exist");
+        try{
+            // make sure direction is valid
+            $validDirections = ['LEFT', 'INNER', 'RIGHT', 'FULL', 'SELF'];
+            if(!in_array($this->direction, $validDirections, true)){
+                throw new R3TException("Invalid join direction '$this->direction'. Valid directions are: ".implode(', ', $validDirections));
+            }
+            if(!$this->previousOperation::columnExists($this->previousOperation->tableConfig->columns, [$this->sourceColumn])){
+                throw new \R3T\Exception\R3TValueException("Join source column does not exist");
+            }
+            if(!$this->jointOperation::columnExists($this->jointOperation->tableConfig->columns, [$this->jointColumn])){
+                throw new \R3T\Exception\R3TValueException("Join target column does not exist");
+            }
+            return array_merge($this->previousOperation->tableConfig->columns, $this->jointOperation->tableConfig->columns);
+        }catch(\Throwable $re){
+            throw $re;
         }
-        if(!$this->jointOperation::columnExists($this->jointOperation->tableConfig->columns, [$this->jointColumn])){
-            throw new \R3T\Exception\R3TValueException("Join target column does not exist");
-        }
-        return array_merge($this->previousOperation->tableConfig->columns, $this->jointOperation->tableConfig->columns);
     }
     public function selectQueryFromPrevious():string{
         $encapsulation = DBQueryFormatter::getEncapsulation(OprDB::$driver);

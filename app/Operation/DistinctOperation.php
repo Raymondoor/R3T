@@ -21,7 +21,7 @@ class DistinctOperation extends Operation{
     public function validateThenGenerateColumns():array{
         $columns = $this->previousOperation->tableConfig->columns;
         if(self::columnExists($columns, [$this->column]) === false){
-            throw new \R3T\Exception\R3TValueException("Column '$this->column' does not exist in the table.");
+            throw new \R3T\Exception\R3TValueException('Column "'.$this->column.'" does not exist in the table.');
         }
         return [$this->column];
     }

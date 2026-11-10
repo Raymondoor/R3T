@@ -19,10 +19,14 @@ class ExtractOperation extends Operation{
     }
     public function validateThenGenerateColumns():array{
         $columns = $this->previousOperation->tableConfig->columns;
+        $noexist = [];
         foreach($this->columns as $column){
             if(self::columnExists($columns, [$column]) === false){
-                throw new \R3T\Exception\R3TValueException("Column '$column' does not exist in the table.");
+                $noexist[] = $column;
             }
+        }
+        if($noexist !== []){
+            throw new \R3T\Exception\R3TValueException('Columns '.implode(',',DBQueryFormatter::wrapWithEncapsulation($noexist, '"')).' does not exist in the table.');;
         }
         return $this->columns;
     }

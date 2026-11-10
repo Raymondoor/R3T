@@ -59,18 +59,22 @@ class SettleOperation extends Operation{
         $this->tableColumns = TrgtDB::selectColumns($this->table);
     }
     public function validateThenGenerateColumns():array{
-        $columns = $this->previousOperation->tableConfig->columns;
-        if(!$this->temporaryConfiguration){
-            $this->setColumnsFromTable();
+        try{
+            $columns = $this->previousOperation->tableConfig->columns;
+            if(!$this->temporaryConfiguration){
+                $this->setColumnsFromTable();
+            }
+            $sourceColumns = $columns;
+            $targetColumns = $this->tableColumns;
+            sort($sourceColumns, SORT_STRING);
+            sort($targetColumns, SORT_STRING);
+            if($sourceColumns !== $targetColumns){
+                throw new \R3T\Exception\R3TValueException('Cannot settle to table, column names do not match.');
+            }
+            return $this->tableColumns;
+        }catch(\Exception $e){
+            throw $e;
         }
-        $sourceColumns = $columns;
-        $targetColumns = $this->tableColumns;
-        sort($sourceColumns, SORT_STRING);
-        sort($targetColumns, SORT_STRING);
-        if($sourceColumns !== $targetColumns){
-            throw new \R3T\Exception\R3TValueException("Cannot settle to table, column names do not match.");
-        }
-        return $this->tableColumns;
     }
     public function transform(iterable $data):iterable{
         // @todo if column name exist in $this->dataType, run typeval() to change, and keep structure

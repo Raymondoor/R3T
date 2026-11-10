@@ -9,9 +9,13 @@ abstract class Operation{
      * Descriptory label for users to understand what the operation does. Optional
      */
     public ?string $label = null;
-    public ?Operation $previousOperation = null;
+    public ?Operation $previousOperation;
     public TableConfiguration $tableConfig;
+    /**
+     * @var ?array{type:string,message:string,previous:\Throwable|array}
+     */
     public ?array $error = null;
+    public ?\Throwable $exception = null;
     public function setLabel(?string $label = null):self{
         $this->label = $label;
         return $this;

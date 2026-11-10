@@ -42,16 +42,20 @@ class UnionOperation extends Operation{
         return $this;
     }
     public function validateThenGenerateColumns():array{
-        // on both operations, check if the columns exist, and if not, throw an exception
-        if(self::columnExists($this->previousOperation->tableConfig->columns, $this->fromColumns) === false){
-            throw new R3TException("Some columns in the first operation do not exist in the table.");
-        }
-        if(self::columnExists($this->unionOperation->tableConfig->columns, $this->unionColumns) === false){
-            throw new R3TException("Some columns in the second operation do not exist in the table.");
-        }
-        // check if the number of columns is the same
-        if(count($this->fromColumns) !== count($this->unionColumns)){
-            throw new R3TException("The number of columns in the first operation does not match the number of columns in the second operation.");
+        try{
+            // on both operations, check if the columns exist, and if not, throw an exception
+            if(self::columnExists($this->previousOperation->tableConfig->columns, $this->fromColumns) === false){
+                throw new R3TException("Some columns in the first operation do not exist in the table.");
+            }
+            if(self::columnExists($this->unionOperation->tableConfig->columns, $this->unionColumns) === false){
+                throw new R3TException("Some columns in the second operation do not exist in the table.");
+            }
+            // check if the number of columns is the same
+            if(count($this->fromColumns) !== count($this->unionColumns)){
+                throw new R3TException("The number of columns in the first operation does not match the number of columns in the second operation.");
+            }
+        }catch(R3TException $re){
+            throw $re;
         }
         return $this->fromColumns;
     }

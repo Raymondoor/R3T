@@ -68,7 +68,7 @@ class R3T{
         return OperationManager::boot();
     }
     /**
-     * Checks config validity and reports errors and detailed relations of all operations.
+     * Checks config validity and reports exceptions and detailed relations of all operations.
      * This has slight impact on Database as it may select the columns from the source and target DBs to validate the operations. Although it does not write any data.
      * @todo implement warning feat on src & target column if not used. catch exception, and report where gone wrong. make relations diagram or smth Nd style a bit
      */
@@ -81,7 +81,7 @@ class R3T{
             $set['operation'] = $reflection->getShortName();
             $set['id'] = $operation->id;
             $set['label'] = $operation->label;
-            if(is_null($operation->error)){
+            if(is_null($operation->exception)){
                 if($operation instanceof SettleOperation){
                     $set['create'] = null;
                 }else{
@@ -94,7 +94,12 @@ class R3T{
                 $set['select'] = null;
                 $set['insert'] = null;
             }
-            $set['error'] = $operation->error;
+            $set['exception'] = is_null($operation->exception) ? null : [
+                'type' => $operation->exception::class,
+                'message' => $operation->exception->getMessage(),
+                'place' => $operation->exception->getFile().':'.$operation->exception->getLine(),
+                'previous' => is_null($operation->exception->getPrevious()) ? null : $operation->exception->getPrevious()::class
+            ];
             $maps[] = $set;
         }
         return $maps;
@@ -110,8 +115,8 @@ class R3T{
             if($operation instanceof SettleOperation){
                 continue;
             }
-            if($operation->error !== null){
-                throw new R3TException("Cannot create table for operation: `".$operation->id.'` due to error: "'.$operation->error['message'].'". Please check the configuration and fix the error before proceeding.');
+            if($operation->exception !== null){
+                throw new R3TException("Cannot create table for operation: `".$operation->id.'` due to exception: "'.$operation->exception->getMessage().'". Please check the configuration and fix the exception before proceeding.');
             }
             if(OprDB::exec($operation->tableConfig->creator->query) === false){
                 throw new R3TException("Failed to create intermediate table: ".$operation->tableConfig->tablename);
@@ -123,7 +128,14 @@ class R3T{
      * Execute the transfer apart from settling to new DB. This will create all new intermediate tables, and transfer the data from source to operational DB.
      */
     public static function transfer():bool{
-        self::createTables(true);
+        try{
+            self::createTables(true);
+        }catch(\Throwable $t){
+            if(self::$config['cli']){
+                echo $t->getMessage();
+            }
+            return false;
+        }
         foreach(OperationManager::$operationList as $operation){
             if(self::$config['cli']){
                 echo 'Operation: '.$operation->id.' started... ';
@@ -184,8 +196,9 @@ class R3T{
      * @todo not implemented yet correctly
      */
     public static function execute():bool{
-        self::transform(); // includes `self::createTables()`
-        self::settle();
-        return true;
+        if(self::transform()){ // includes `self::createTables()`
+            return self::settle();
+        }
+        return false;
     }
 }

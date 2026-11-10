@@ -38,5 +38,5 @@ $settleGroup = $opr::register(SettleOperation::from($groupsFinal)->settleColumns
 $settleUser = $opr::register(SettleOperation::from($usersFinal)->settleColumns('users', ['id', 'name', 'groups_id', 'created_at']));
 
 dump(R3T::analyze());
-// R3T::createTables(true);
+R3T::transform();
 // R3T::settle();

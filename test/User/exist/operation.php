@@ -37,4 +37,5 @@ $settleUser = $opr::register(SettleOperation::from($usersFinal)->settle('users')
 
 dump(R3T::analyze());
 R3T::transfer();
+// R3T::createTables(true);
 // R3T::settle();

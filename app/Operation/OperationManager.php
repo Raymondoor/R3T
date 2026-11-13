@@ -28,6 +28,11 @@ class OperationManager{
         self::$operationList[] = $operation;
         return $operation;
     }
+    /**
+     * Validates and creates a Table configuration.
+     * Stores `Operation::exception` if there is an incompatible configuration
+     * @return void
+     */
     public static function setAllTableConfiguration():void{
         $rp = new ReflectionProperty(Operation::class, 'tableConfig');
         foreach(self::$operationList as $op){
@@ -38,13 +43,17 @@ class OperationManager{
                 if($op->previousOperation !== null && !$rp->isInitialized($op->previousOperation)){ // Root operations such as CaptureOperation have no previous operation (set to null).
                     throw new R3TException("Cannot set table configuration for operation `".$op->id."`, previous operation's configuration (`".$op->previousOperation->id."`) is not initialized.");
                 }
-                $op->setTableConfiguration();
+                if(is_null($op->previousOperation) || is_null($op->previousOperation->exception)){
+                    $op->setTableConfiguration();
+                }else{
+                    $op->exception = new R3TException('Previous operation '.$op->previousOperation->id.' has an unresolved error',$op->previousOperation->exception->getCode(),$op->previousOperation->exception);
+                }
             }catch(\Throwable $t){
-                $rc = new \ReflectionClass($t::class);
-                $op->setError([
-                    'type' => $rc->getShortName(),
-                    'message' => $t->getMessage(),
-                ]);
+                if(!is_null($op->previousOperation) && !is_null($op->previousOperation->exception)){
+                    $op->exception = new R3TException('Previous operation '.$op->previousOperation->id.' has an unresolved error',$op->previousOperation->exception->getCode(),$op->previousOperation->exception);
+                }else{
+                    $op->exception = $t;
+                }
             }
         }
     }

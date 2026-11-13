@@ -1,12 +1,12 @@
 <?php declare(strict_types=1);
 namespace R3T\Operation;
-
 use R3T\Database\SrcDB;
 use R3T\Util\DBQueryFormatter;
 /**
  * Magic operation to treat source DB as a previous operation. This operation will replicate the source DB table to a new stage ensuring the modification does not happen in source.
  */
 class CaptureOperation extends Operation{
+    public ?Operation $previousOperation = null;
     public bool $temporaryConfiguration = false;
     public string $table;
     public array $tableColumns;
@@ -35,15 +35,17 @@ class CaptureOperation extends Operation{
         if(!$this->temporaryConfiguration){
             try{
                 $this->tableColumns = SrcDB::selectColumns($this->table);
-                SrcDB::select('SELECT count(*) FROM "'.$this->table.'" LIMIT 1');
             }catch(\Exception $e){
-                throw new \R3T\Exception\R3TValueException("Cannot capture from source table, table does not exist.: ".$e->getMessage());
+                throw new \R3T\Exception\R3TValueException('Cannot capture from source table, table "'.$this->table.'" not exist.',$e->getCode(),$e);
             }
         }
         return $this->tableColumns;
     }
     public function selectQueryFromPrevious():string{
-        return 'SELECT * FROM '.DBQueryFormatter::getEncapsulation(SrcDB::$driver).$this->table.DBQueryFormatter::getEncapsulation(SrcDB::$driver);
+        if(!$this->temporaryConfiguration){
+            return 'SELECT * FROM '.DBQueryFormatter::getEncapsulation(SrcDB::$driver).$this->table.DBQueryFormatter::getEncapsulation(SrcDB::$driver);
+        }
+        return 'SELECT * FROM '.$this->table;
     }
     public function transform(iterable $data):iterable{
         foreach($data as $row){

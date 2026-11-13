@@ -23,3 +23,6 @@ should be able to run even without the databases being present, modularization i
 on error, if one goes wrong it will chain with no-initialized atm because it never set the configs on the previous opr. it has to chain, but the error message should not be php default's "not initialized", but a proper one. Dunno if putting `$error` inside the operation is good or not either.
 
 Some database needs id counter reset. keep that in mind. Should we provide helper?
+
+It would be better to implement an `analyze()` method to each operation rather than the manager trying to do everything?
+    A consumable OperationAnalyzer helper class may be a good starting point, although the above method itlsef belongs to Operation.

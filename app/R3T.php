@@ -61,14 +61,13 @@ class R3T{
         if($trgt)TrgtDB::connect();
     }
     /**
-     * 
      * @return OperationManager Instance of OperationManager to register operations and manage the transfer process.
      */
     public static function operator():OperationManager{
         return OperationManager::boot();
     }
     /**
-     * Checks config validity and reports errors and detailed relations of all operations.
+     * Checks config validity and reports exceptions and detailed relations of all operations.
      * This has slight impact on Database as it may select the columns from the source and target DBs to validate the operations. Although it does not write any data.
      * @todo implement warning feat on src & target column if not used. catch exception, and report where gone wrong. make relations diagram or smth Nd style a bit
      */
@@ -81,7 +80,7 @@ class R3T{
             $set['operation'] = $reflection->getShortName();
             $set['id'] = $operation->id;
             $set['label'] = $operation->label;
-            if(is_null($operation->error)){
+            if(is_null($operation->exception)){
                 if($operation instanceof SettleOperation){
                     $set['create'] = null;
                 }else{
@@ -94,7 +93,12 @@ class R3T{
                 $set['select'] = null;
                 $set['insert'] = null;
             }
-            $set['error'] = $operation->error;
+            $set['exception'] = is_null($operation->exception) ? null : [
+                'type' => $operation->exception::class,
+                'message' => $operation->exception->getMessage(),
+                'place' => $operation->exception->getFile().':'.$operation->exception->getLine(),
+                'previous' => is_null($operation->exception->getPrevious()) ? null : $operation->exception->getPrevious()::class
+            ];
             $maps[] = $set;
         }
         return $maps;
@@ -105,17 +109,23 @@ class R3T{
      */
     public static function createTables(bool $reset = false):bool{
         OperationManager::setAllTableConfiguration();
+        if(self::isDBConnected('opr') === false){
+            throw new R3TException("Cannot create tables. Operational DB is not connected. Please run `R3T::connectDBs()` first.");
+        }
         if($reset)OprDB::dropAllTables();
         foreach(OperationManager::$operationList as $operation){
             if($operation instanceof SettleOperation){
                 continue;
             }
-            if($operation->error !== null){
-                throw new R3TException("Cannot create table for operation: `".$operation->id.'` due to error: "'.$operation->error['message'].'". Please check the configuration and fix the error before proceeding.');
+            if($operation->exception !== null){
+                throw new R3TException("Cannot create table for operation: `".$operation->id.'` due to exception: "'.$operation->exception->getMessage().'". Please check the configuration and fix the exception before proceeding.');
             }
             if(OprDB::exec($operation->tableConfig->creator->query) === false){
                 throw new R3TException("Failed to create intermediate table: ".$operation->tableConfig->tablename);
             }
+        }
+        if(self::isCli()){
+            echo 'All '.(string)count(OperationManager::$operationList).' intermediate tables created successfully in Operational DB.'.PHP_EOL;
         }
         return true;
     }
@@ -123,13 +133,20 @@ class R3T{
      * Execute the transfer apart from settling to new DB. This will create all new intermediate tables, and transfer the data from source to operational DB.
      */
     public static function transfer():bool{
-        self::createTables(true);
+        try{
+            self::createTables(true);
+        }catch(\Throwable $t){
+            if(self::isCli()){
+                echo $t->getMessage();
+            }
+            return false;
+        }
         foreach(OperationManager::$operationList as $operation){
-            if(self::$config['cli']){
+            if(self::isCli()){
                 echo 'Operation: '.$operation->id.' started... ';
             }
             if($operation instanceof SettleOperation){
-                if(self::$config['cli']){
+                if(self::isCli()){
                     echo 'skipped for later.'.PHP_EOL;
                 }
             }else{
@@ -142,7 +159,7 @@ class R3T{
                 foreach($newData as $newRecord){
                     OprDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($newRecord));
                 }
-                if(self::$config['cli']){
+                if(self::isCli()){
                     echo 'transfer completed.'.PHP_EOL;
                 }
             }
@@ -163,7 +180,7 @@ class R3T{
     public static function settle():bool{
         foreach(OperationManager::$operationList as $operation){
             if($operation instanceof SettleOperation){
-                if(self::$config['cli']){
+                if(self::isCli()){
                     echo 'Operation: '.$operation->id.' started... ';
                 }
                 $data = OprDB::selectUnbuffered($operation->selectQueryFromPrevious());
@@ -171,7 +188,7 @@ class R3T{
                 foreach($newData as $newRecord){
                     TrgtDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($newRecord));
                 }
-                if(self::$config['cli']){
+                if(self::isCli()){
                     echo 'settle completed.'.PHP_EOL;
                 }
             }
@@ -184,8 +201,24 @@ class R3T{
      * @todo not implemented yet correctly
      */
     public static function execute():bool{
-        self::transform(); // includes `self::createTables()`
-        self::settle();
-        return true;
+        if(self::transform()){ // includes `self::createTables()`
+            return self::settle();
+        }
+        return false;
+    }
+    private static function isCli():bool{
+        return self::$config['cli'] === true;
+    }
+    /**
+     * @param 'src'|'opr'|'trgt'|'all' $dbType
+     */
+    private static function isDBConnected(string $dbType):bool{
+        return match($dbType){
+            'src' => self::$isSrcDBSet,
+            'opr' => self::$isOprDBSet,
+            'trgt' => self::$isTrgtDBSet,
+            'all' => self::$isSrcDBSet && self::$isOprDBSet && self::$isTrgtDBSet,
+            default => throw new R3TException("Invalid DB type: ".$dbType),
+        };
     }
 }

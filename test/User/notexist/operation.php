@@ -11,7 +11,7 @@ R3T::boot([
 // R3T::setTargetDB('sqlite', __DIR__.'/databaseT.db');
 // R3T::connectDBs();
 $opr = R3T::operator();
-$usersOriginal = $opr::register(CaptureOperation::fromColumns('users', ['id', 'name', 'group', ''])->setLabel('Capture users table'));
+$usersOriginal = $opr::register(CaptureOperation::fromColumns('users', ['id', 'name', 'group', 'created_at'])->setLabel('Capture users table'));
 $groupsExtracted = $opr::register(ExtractOperation::from($usersOriginal)->extract('group'));
 $distinctGroups = $opr::register(DistinctOperation::from($groupsExtracted)->distinct('group'));
 $renameAdjustGroups = $opr::register(RenameOperation::from($distinctGroups)->rename(['group' => 'group_name']));
@@ -38,5 +38,5 @@ $settleGroup = $opr::register(SettleOperation::from($groupsFinal)->settleColumns
 $settleUser = $opr::register(SettleOperation::from($usersFinal)->settleColumns('users', ['id', 'name', 'groups_id', 'created_at']));
 
 dump(R3T::analyze());
-// R3T::createTables(true);
+R3T::transform();
 // R3T::settle();

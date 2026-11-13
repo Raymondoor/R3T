@@ -22,12 +22,20 @@ class RenameOperation extends Operation{
     }
     public function validateThenGenerateColumns():array{
         $columns = $this->previousOperation->tableConfig->columns;
+        $noexist = [];
+        $exist = [];
         foreach($this->modifications as $oldName => $newName){
             if(!in_array($oldName, $columns)){
-                throw new \R3T\Exception\R3TValueException("Column $oldName does not exist in the original columns");
+                $noexist[] = $oldName;
             }
             if(in_array($newName, $columns)){
-                throw new \R3T\Exception\R3TValueException("Column $newName already exists in the original columns");
+                $exist[] = $newName;
+            }
+            if($noexist !== [] || $exist !== []){
+                $noexistMessage = ($noexist !== []) ? 'Columns '.implode(',',DBQueryFormatter::wrapWithEncapsulation($noexist, '"')).' does not exist in the table.' : '';
+                $also = ($noexist !== [] && $exist !== []) ? ' Also, ' : '';
+                $existMessage = ($exist !== []) ? 'Columns '.implode(',',DBQueryFormatter::wrapWithEncapsulation($noexist, '"')).' already exists in the original columns.' : '';
+                throw new \R3T\Exception\R3TValueException($noexistMessage.$also.$existMessage);
             }
             $index = array_search($oldName, $columns, true);
             $columns[$index] = $newName;

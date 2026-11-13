@@ -26,3 +26,5 @@ Some database needs id counter reset. keep that in mind. Should we provide helpe
 
 It would be better to implement an `analyze()` method to each operation rather than the manager trying to do everything?
     A consumable OperationAnalyzer helper class may be a good starting point, although the above method itlsef belongs to Operation.
+
+Do I even have to implement my own schema builder? as in query formatter etc. I can just use doctorine/DBAL and get only the query, then just run that using my own PDO wrapper.

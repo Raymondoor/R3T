@@ -12,7 +12,7 @@ $opr = R3T::operator();
 $usersOriginal = $opr::register(CaptureOperation::fromTable('users'));
 $groupsExtracted = $opr::register(ExtractOperation::from($usersOriginal)->extract('group'));
 $distinctGroups = $opr::register(DistinctOperation::from($groupsExtracted)->distinct('group'));
-$renameAdjustGroups = $opr::register(RenameOperation::from($distinctGroups)->rename(['grosup' => 'group_name']));
+$renameAdjustGroups = $opr::register(RenameOperation::from($distinctGroups)->rename(['group' => 'group_name']));
 $addIdToGroup = $opr::register(AddColumnsOperation::from($renameAdjustGroups)->add(['groups_id']));
 $populateId = $opr::register(ModifyValuesOperation::from($addIdToGroup)->modify(function(iterable $records){
 	$i = 1;

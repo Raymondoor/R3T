@@ -61,7 +61,6 @@ class R3T{
         if($trgt)TrgtDB::connect();
     }
     /**
-     * 
      * @return OperationManager Instance of OperationManager to register operations and manage the transfer process.
      */
     public static function operator():OperationManager{
@@ -110,6 +109,9 @@ class R3T{
      */
     public static function createTables(bool $reset = false):bool{
         OperationManager::setAllTableConfiguration();
+        if(self::isDBConnected('opr') === false){
+            throw new R3TException("Cannot create tables. Operational DB is not connected. Please run `R3T::connectDBs()` first.");
+        }
         if($reset)OprDB::dropAllTables();
         foreach(OperationManager::$operationList as $operation){
             if($operation instanceof SettleOperation){
@@ -122,6 +124,9 @@ class R3T{
                 throw new R3TException("Failed to create intermediate table: ".$operation->tableConfig->tablename);
             }
         }
+        if(self::isCli()){
+            echo 'All '.(string)count(OperationManager::$operationList).' intermediate tables created successfully in Operational DB.'.PHP_EOL;
+        }
         return true;
     }
     /**
@@ -131,17 +136,17 @@ class R3T{
         try{
             self::createTables(true);
         }catch(\Throwable $t){
-            if(self::$config['cli']){
+            if(self::isCli()){
                 echo $t->getMessage();
             }
             return false;
         }
         foreach(OperationManager::$operationList as $operation){
-            if(self::$config['cli']){
+            if(self::isCli()){
                 echo 'Operation: '.$operation->id.' started... ';
             }
             if($operation instanceof SettleOperation){
-                if(self::$config['cli']){
+                if(self::isCli()){
                     echo 'skipped for later.'.PHP_EOL;
                 }
             }else{
@@ -154,7 +159,7 @@ class R3T{
                 foreach($newData as $newRecord){
                     OprDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($newRecord));
                 }
-                if(self::$config['cli']){
+                if(self::isCli()){
                     echo 'transfer completed.'.PHP_EOL;
                 }
             }
@@ -175,7 +180,7 @@ class R3T{
     public static function settle():bool{
         foreach(OperationManager::$operationList as $operation){
             if($operation instanceof SettleOperation){
-                if(self::$config['cli']){
+                if(self::isCli()){
                     echo 'Operation: '.$operation->id.' started... ';
                 }
                 $data = OprDB::selectUnbuffered($operation->selectQueryFromPrevious());
@@ -183,7 +188,7 @@ class R3T{
                 foreach($newData as $newRecord){
                     TrgtDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($newRecord));
                 }
-                if(self::$config['cli']){
+                if(self::isCli()){
                     echo 'settle completed.'.PHP_EOL;
                 }
             }
@@ -200,5 +205,20 @@ class R3T{
             return self::settle();
         }
         return false;
+    }
+    private static function isCli():bool{
+        return self::$config['cli'] === true;
+    }
+    /**
+     * @param 'src'|'opr'|'trgt'|'all' $dbType
+     */
+    private static function isDBConnected(string $dbType):bool{
+        return match($dbType){
+            'src' => self::$isSrcDBSet,
+            'opr' => self::$isOprDBSet,
+            'trgt' => self::$isTrgtDBSet,
+            'all' => self::$isSrcDBSet && self::$isOprDBSet && self::$isTrgtDBSet,
+            default => throw new R3TException("Invalid DB type: ".$dbType),
+        };
     }
 }

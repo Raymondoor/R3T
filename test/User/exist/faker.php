@@ -5,14 +5,14 @@ use R3T\Database\SrcDB;
 
 $faker = \Faker\Factory::create();
 SrcDB::$driver = 'sqlite';
-SrcDB::$host = __DIR__.'/databaseS.db';
+SrcDB::$dsn = __DIR__.'/databaseS.db';
 SrcDB::$user = '';
 SrcDB::$pass = '';
 SrcDB::connect();
 
-for($i=0; $i<100; $i++){
+for($i=0; $i<1024; $i++){
     $name = $faker->name();
-    $group = $faker->randomElement(['admin', 'viewer', 'guest', 'moderator', 'editor']);
+    $group = $faker->randomElement(['admin', 'viewer', 'guest', 'moderator', 'editor', 'contributor', 'subscriber', 'author', 'manager', 'analyst']);
     SrcDB::run('INSERT INTO users (`name`, `group`) VALUES (:name, :group)', [
         ':name' => $name,
         ':group' => $group

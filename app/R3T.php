@@ -98,6 +98,16 @@ class R3T{
                 'place' => $operation->exception->getFile().':'.$operation->exception->getLine(),
                 'previous' => is_null($operation->exception->getPrevious()) ? null : $operation->exception->getPrevious()::class
             ];
+            if(self::isCli()){
+                echo $operation->id.' : '."\033[38;5;14mAnalyzing...\033[0m ";
+                if(is_null($operation->exception)){
+                    echo "\033[38;5;2mOK\033[0m".PHP_EOL;
+                }else{
+                    echo "\033[38;5;1mFailed\033[0m".PHP_EOL;
+                    echo "\t\033[38;5;172mException\033[0m : ".$set['exception']['type'].PHP_EOL;
+                    echo "\t  \033[38;5;172mMessage\033[0m : ".$set['exception']['message'].PHP_EOL;
+                }
+            }
             yield $set;
         }
     }
@@ -118,6 +128,7 @@ class R3T{
      * @throws \Exception if any operation has exception, or if the operational DB is not connected.
      */
     public static function createTables(bool $reset = false):bool{
+        // @todo [2026/10/09 from:torhc17311@gmail.com to:all] Even if it is clear here already there may be an exception, it does not check it underneath, so it just throws an exception when it tries to create the table. No table should be created if there is an exception in any operation.
         OperationManager::setAllTableConfiguration();
         if(self::isDBConnected('opr') === false){
             throw new R3TException("Cannot create tables. Operational DB is not connected. Please run `R3T::connectDBs()` first.");
@@ -143,11 +154,19 @@ class R3T{
      * Execute the transfer apart from settling to new DB. This will create all new intermediate tables, and transfer the data from source to operational DB.
      * This is a generator function that yields the progress of each operation. Each yield will return a boolean indicating whether the operation was successful or not. If an operation fails, the generator will throw an exception and stop the transfer process.
      * Since it is a generator it has to be consumed in a loop to execute the transfer.
-     * @return \Generator bool[]
+     * @return \Generator array
      */
     public static function transferVerbose():\Generator{
+        // @todo [2026/10/09 from:torhc17311@gmail.com to:all] should I even run createTables() here? or should I let the caller run it?
         self::createTables(true); // delibarate no catch here, let the exception propagate to the caller
         foreach(OperationManager::$operationList as $operation){
+            $operationRecord = [
+                'operation' => $operation::class,
+                'id' => $operation->id,
+                'label' => $operation->label,
+                'success' => false,
+                'rows' => 0,
+            ];
             if(self::isCli()){
                 echo $operation->id.' : '."\033[38;5;14mStarted...\033[0m ";
             }
@@ -162,15 +181,19 @@ class R3T{
                     $data = OprDB::selectUnbuffered($operation->selectQueryFromPrevious());
                 }
                 $newData = $operation->transform($data);
+                $count = 0;
                 foreach($newData as $newRecord){
                     // let it throw exception if failed, and let the caller handle it. This is to ensure that the transfer process stops immediately when an error occurs, and the caller can decide how to handle the error (e.g., log it, retry, etc.).
                     OprDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($newRecord));
+                    $count++; // count() function does not work on generators, so we have to manually count the rows inserted.
                 }
+                $operationRecord['rows'] = $count;
                 if(self::isCli()){
-                    echo "\033[38;5;22mTransfer completed.\033[0m".PHP_EOL;
+                    echo "\033[38;5;22mTransfer completed.\033[0m \033[38;5;3m".$count."\033[0m rows transfered.".PHP_EOL;
                 }
             }
-            yield true;
+            $operationRecord['success'] = true;
+            yield $operationRecord;
         }
     }
     /**
@@ -179,7 +202,9 @@ class R3T{
     public static function transfer():bool{
         try{
             foreach(self::transferVerbose() as $result){
-                continue;
+                if($result['success'] === false){
+                    throw new R3TException("Transfer failed for operation: ".$result['id']." (".$result['label'].")");
+                }
             }
             return true;
         }catch(\Throwable $t){
@@ -208,11 +233,13 @@ class R3T{
                 }
                 $data = OprDB::selectUnbuffered($operation->selectQueryFromPrevious());
                 $newData = $operation->transform($data);
+                $count = 0;
                 foreach($newData as $newRecord){
                     TrgtDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($newRecord));
+                    $count++; // count() function does not work on generators, so we have to manually count the rows inserted.
                 }
                 if(self::isCli()){
-                    echo "\033[38;5;2mSettle completed.\033[0m".PHP_EOL;
+                    echo "\033[38;5;2mSettle completed.\033[0m \033[38;5;3m".$count."\033[0m rows settled.".PHP_EOL;
                 }
             }
         }

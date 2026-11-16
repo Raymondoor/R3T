@@ -36,13 +36,8 @@ $settleGroup = $opr::register(SettleOperation::from($groupsFinal)->settle('group
 $settleUser = $opr::register(SettleOperation::from($usersFinal)->settle('users'));
 
 echo "Analize started...".PHP_EOL;
-foreach(R3T::analyzeVerbose() as $analysis){
-    usleep(100000);
-	continue;
-}
-foreach(R3T::transferVerbose() as $transfer){
-	continue;
-}
+R3T::analyze();
+R3T::transform();
 // R3T::createTables(true);
 // R3T::settle();
 

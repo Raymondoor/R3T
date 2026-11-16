@@ -109,6 +109,7 @@ class R3T{
                     echo "\t  ".TerminalHelper::color('yellow', 'Message')." : ".$set['exception']['message'].PHP_EOL;
                 }
             }
+            usleep(50000); // sleep for 0.05 second to allow user to recognize the progress of the analysis. This is to avoid overwhelming the user with too much information at once, and to give them a chance to see the progress of each operation. The sleep time can be adjusted based on user preference or system performance.
             yield $set;
         }
     }
@@ -131,7 +132,7 @@ class R3T{
     public static function createTables(bool $reset = false):bool{
         OperationManager::setAllTableConfiguration();
         if(self::isDBConnected('opr') === false){
-            throw new R3TException("Cannot create tables. Operational DB is not connected. Please run `R3T::connectDBs()` first.");
+            throw new R3TException("Cannot create tables. Operational DB is not connected. Please run `R3T::connectDBs()` first.".PHP_EOL);
         }
         if($reset)OprDB::dropAllTables();
         array_map(function($operation):void{
@@ -216,7 +217,7 @@ class R3T{
                 }
             }
             $operationRecord['success'] = true;
-            usleep(100000); // sleep for 0.1 second to allow user to recognize the progress of the transfer. This is to avoid overwhelming the user with too much information at once, and to give them a chance to see the progress of each operation. The sleep time can be adjusted based on user preference or system performance.
+            usleep(50000); // sleep for 0.05 second to allow user to recognize the progress of the transfer. This is to avoid overwhelming the user with too much information at once, and to give them a chance to see the progress of each operation. The sleep time can be adjusted based on user preference or system performance.
             yield $operationRecord;
         }
     }
@@ -287,7 +288,7 @@ class R3T{
                     TerminalHelper::spinnerFinish(TerminalHelper::color('green', 'Settle completed.').' '.TerminalHelper::color('yellow', number_format($count)).' rows settled.');
                 }
             }
-            usleep(100000); // sleep for 0.1 second to allow user to recognize the progress of the settle. This is to avoid overwhelming the user with too much information at once, and to give them a chance to see the progress of each operation. The sleep time can be adjusted based on user preference or system performance.
+            usleep(50000); // sleep for 0.05 second to allow user to recognize the progress of the settle. This is to avoid overwhelming the user with too much information at once, and to give them a chance to see the progress of each operation. The sleep time can be adjusted based on user preference or system performance.
         }
         return true;
     }

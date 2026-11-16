@@ -37,6 +37,6 @@ $groupsFinal = $opr::register(ModifyValuesOperation::from($groupsAddTimestamp)->
 $settleGroup = $opr::register(SettleOperation::from($groupsFinal)->settleColumns('groups', ['id', 'name', 'created_at']));
 $settleUser = $opr::register(SettleOperation::from($usersFinal)->settleColumns('users', ['id', 'name', 'groups_id', 'created_at']));
 
-dump(R3T::analyze());
+R3T::analyze();
 R3T::transform();
 // R3T::settle();

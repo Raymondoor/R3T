@@ -106,6 +106,7 @@ class R3T{
     /**
      * Create all intermediate tables registered in operation. Is created in database set in `R3T::setOperationalDB()`.
      * @param bool $reset `true` deletes all existing tables inside operational DB. Useful when re-running many times to test the configuration.
+     * @throws \Exception if any operation has exception, or if the operational DB is not connected.
      */
     public static function createTables(bool $reset = false):bool{
         OperationManager::setAllTableConfiguration();
@@ -125,29 +126,25 @@ class R3T{
             }
         }
         if(self::isCli()){
-            echo 'All '.(string)count(OperationManager::$operationList).' intermediate tables created successfully in Operational DB.'.PHP_EOL;
+            echo 'All '."\033[38;5;3m".(string)count(OperationManager::$operationList)."\033[0m".' intermediate tables created successfully in Operational DB.'.PHP_EOL;
         }
         return true;
     }
     /**
      * Execute the transfer apart from settling to new DB. This will create all new intermediate tables, and transfer the data from source to operational DB.
+     * This is a generator function that yields the progress of each operation. Each yield will return a boolean indicating whether the operation was successful or not. If an operation fails, the generator will throw an exception and stop the transfer process.
+     * Since it is a generator it has to be consumed in a loop to execute the transfer.
+     * @return \Generator bool[]
      */
-    public static function transfer():bool{
-        try{
-            self::createTables(true);
-        }catch(\Throwable $t){
-            if(self::isCli()){
-                echo $t->getMessage();
-            }
-            return false;
-        }
+    public static function transferVerbose():\Generator{
+        self::createTables(true); // delibarate no catch here, let the exception propagate to the caller
         foreach(OperationManager::$operationList as $operation){
             if(self::isCli()){
-                echo 'Operation: '.$operation->id.' started... ';
+                echo $operation->id.' : '."\033[38;5;14mStarted...\033[0m ";
             }
             if($operation instanceof SettleOperation){
                 if(self::isCli()){
-                    echo 'skipped for later.'.PHP_EOL;
+                    echo 'Skipped for later.'.PHP_EOL;
                 }
             }else{
                 if($operation instanceof CaptureOperation){
@@ -157,14 +154,31 @@ class R3T{
                 }
                 $newData = $operation->transform($data);
                 foreach($newData as $newRecord){
+                    // let it throw exception if failed, and let the caller handle it. This is to ensure that the transfer process stops immediately when an error occurs, and the caller can decide how to handle the error (e.g., log it, retry, etc.).
                     OprDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($newRecord));
                 }
                 if(self::isCli()){
-                    echo 'transfer completed.'.PHP_EOL;
+                    echo "\033[38;5;22mTransfer completed.\033[0m".PHP_EOL;
                 }
             }
+            yield true;
         }
-        return true;
+    }
+    /**
+     * Execute the transfer apart from settling to new DB. This will create all new intermediate tables, and transfer the data from source to operational DB.
+     */
+    public static function transfer():bool{
+        try{
+            foreach(self::transferVerbose() as $result){
+                continue;
+            }
+            return true;
+        }catch(\Throwable $t){
+            if(self::isCli()){
+                echo $t->getMessage();
+            }
+            return false;
+        }
     }
     /**
      * Alias for `self::transfer()`. 
@@ -181,7 +195,7 @@ class R3T{
         foreach(OperationManager::$operationList as $operation){
             if($operation instanceof SettleOperation){
                 if(self::isCli()){
-                    echo 'Operation: '.$operation->id.' started... ';
+                    echo $operation->id.' : '."\033[38;5;14mStarted...\033[0m ";
                 }
                 $data = OprDB::selectUnbuffered($operation->selectQueryFromPrevious());
                 $newData = $operation->transform($data);
@@ -189,7 +203,7 @@ class R3T{
                     TrgtDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($newRecord));
                 }
                 if(self::isCli()){
-                    echo 'settle completed.'.PHP_EOL;
+                    echo "\033[38;5;2mSettle completed.\033[0m".PHP_EOL;
                 }
             }
         }

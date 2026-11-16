@@ -128,18 +128,19 @@ class R3T{
      * @throws \Exception if any operation has exception, or if the operational DB is not connected.
      */
     public static function createTables(bool $reset = false):bool{
-        // @todo [2026/11/16 from:torhc17311@gmail.com to:all] Even if it is clear here already there may be an exception, it does not check it underneath, so it just throws an exception when it tries to create the table. No table should be created if there is an exception in any operation.
         OperationManager::setAllTableConfiguration();
         if(self::isDBConnected('opr') === false){
             throw new R3TException("Cannot create tables. Operational DB is not connected. Please run `R3T::connectDBs()` first.");
         }
         if($reset)OprDB::dropAllTables();
+        array_map(function($operation):void{
+            if($operation->exception !== null){
+                throw new R3TException("Cannot create table for operation: `".$operation->id.'` due to exception: "'.$operation->exception->getMessage().'". Please check the configuration and fix the exception before proceeding.');
+            }
+        }, OperationManager::$operationList);
         foreach(OperationManager::$operationList as $operation){
             if($operation instanceof SettleOperation){
                 continue;
-            }
-            if($operation->exception !== null){
-                throw new R3TException("Cannot create table for operation: `".$operation->id.'` due to exception: "'.$operation->exception->getMessage().'". Please check the configuration and fix the exception before proceeding.');
             }
             if(OprDB::exec($operation->tableConfig->creator->query) === false){
                 throw new R3TException("Failed to create intermediate table: ".$operation->tableConfig->tablename);
@@ -251,7 +252,7 @@ class R3T{
      * @todo not implemented yet correctly
      */
     public static function execute():bool{
-        if(self::transform()){ // includes `self::createTables()`
+        if(self::transform()){
             return self::settle();
         }
         return false;

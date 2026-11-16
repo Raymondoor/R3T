@@ -67,13 +67,12 @@ class R3T{
         return OperationManager::boot();
     }
     /**
-     * Checks config validity and reports exceptions and detailed relations of all operations.
+     * Checks config validity and reports exceptions and detailed relations of all operations in registry.
      * This has slight impact on Database as it may select the columns from the source and target DBs to validate the operations. Although it does not write any data.
      * @todo implement warning feat on src & target column if not used. catch exception, and report where gone wrong. make relations diagram or smth Nd style a bit
      */
-    public static function analyze():mixed{
+    public static function analyzeVerbose():\Generator{
         OperationManager::setAllTableConfiguration();
-        $maps = [];
         foreach(OperationManager::$operationList as $operation){
             $set = [];
             $reflection = new \ReflectionClass($operation::class);
@@ -99,6 +98,16 @@ class R3T{
                 'place' => $operation->exception->getFile().':'.$operation->exception->getLine(),
                 'previous' => is_null($operation->exception->getPrevious()) ? null : $operation->exception->getPrevious()::class
             ];
+            yield $set;
+        }
+    }
+    /**
+     * Analyzes the current registry.
+     * @return array[]
+     */
+    public static function analyze():mixed{
+        $maps = [];
+        foreach(self::analyzeVerbose() as $set){
             $maps[] = $set;
         }
         return $maps;

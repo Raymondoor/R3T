@@ -35,7 +35,12 @@ $groupsFinal = $opr::register(ModifyValuesOperation::from($groupsAddTimestamp)->
 $settleGroup = $opr::register(SettleOperation::from($groupsFinal)->settle('groups'));
 $settleUser = $opr::register(SettleOperation::from($usersFinal)->settle('users'));
 
-dump(R3T::analyze());
+echo "Analize started...".PHP_EOL;
+foreach(R3T::analyzeVerbose() as $analysis){
+    usleep(100000);
+	continue;
+}
+
 R3T::transfer();
 // R3T::createTables(true);
-R3T::settle();
+// R3T::settle();

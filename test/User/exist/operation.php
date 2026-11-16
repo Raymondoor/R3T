@@ -40,7 +40,8 @@ foreach(R3T::analyzeVerbose() as $analysis){
     usleep(100000);
 	continue;
 }
-
-R3T::transfer();
+foreach(R3T::transferVerbose() as $transfer){
+	continue;
+}
 // R3T::createTables(true);
 // R3T::settle();

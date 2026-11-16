@@ -9,6 +9,7 @@ use R3T\Operation\CaptureOperation;
 use R3T\Operation\SettleOperation;
 use R3T\Operation\OperationManager;
 use R3T\Util\DBQueryFormatter;
+use R3T\Util\TerminalHelper;
 class R3T{
     public static array $config = [
         'cli' => true,
@@ -99,13 +100,13 @@ class R3T{
                 'previous' => is_null($operation->exception->getPrevious()) ? null : $operation->exception->getPrevious()::class
             ];
             if(self::isCli()){
-                echo $operation->id.' : '."\033[38;5;14mAnalyzing...\033[0m ";
+                echo $operation->id.' : '.TerminalHelper::color('blue', 'Analyzing... ');
                 if(is_null($operation->exception)){
-                    echo "\033[38;5;2mOK\033[0m".PHP_EOL;
+                    echo TerminalHelper::color('green', 'OK').PHP_EOL;
                 }else{
-                    echo "\033[38;5;1mFailed\033[0m".PHP_EOL;
-                    echo "\t\033[38;5;172mException\033[0m : ".$set['exception']['type'].PHP_EOL;
-                    echo "\t  \033[38;5;172mMessage\033[0m : ".$set['exception']['message'].PHP_EOL;
+                    echo TerminalHelper::color('red', 'Failed').PHP_EOL;
+                    echo "\t".TerminalHelper::color('yellow', 'Exception')." : ".$set['exception']['type'].PHP_EOL;
+                    echo "\t  ".TerminalHelper::color('yellow', 'Message')." : ".$set['exception']['message'].PHP_EOL;
                 }
             }
             yield $set;
@@ -147,7 +148,8 @@ class R3T{
             }
         }
         if(self::isCli()){
-            echo 'All '."\033[38;5;3m".(string)count(OperationManager::$operationList)."\033[0m".' intermediate tables created successfully in Operational DB.'.PHP_EOL;
+            // yellow
+            echo 'All '.TerminalHelper::color('yellow', (string)count(OperationManager::$operationList)).' intermediate tables created successfully in Operational DB.'.PHP_EOL;
         }
         return true;
     }
@@ -169,11 +171,11 @@ class R3T{
                 'rows' => 0,
             ];
             if(self::isCli()){
-                echo $operation->id.' : '."\033[38;5;14mStarted...\033[0m ";
+                TerminalHelper::spinnerStart($operation->id.' : '.TerminalHelper::color('cyan', 'Started... '));
             }
             if($operation instanceof SettleOperation){
                 if(self::isCli()){
-                    echo 'Skipped for later.'.PHP_EOL;
+                    TerminalHelper::spinnerFinish(TerminalHelper::color('white', 'Skipped for later.'));
                 }
             }else{
                 if($operation instanceof CaptureOperation){
@@ -183,17 +185,38 @@ class R3T{
                 }
                 $newData = $operation->transform($data);
                 $count = 0;
+                $chunkSize = 1024; // number of rows to insert at once, to reduce the number of queries and improve performance. Has to be adjustable based on memory and stuff, atm is fixed.
+                $buffer = [];
+                OprDB::beginTransaction();
                 foreach($newData as $newRecord){
-                    // let it throw exception if failed, and let the caller handle it. This is to ensure that the transfer process stops immediately when an error occurs, and the caller can decide how to handle the error (e.g., log it, retry, etc.).
-                    OprDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($newRecord));
-                    $count++; // count() function does not work on generators, so we have to manually count the rows inserted.
+                    $buffer[] = $newRecord;
+                    if(self::isCli()){
+                        TerminalHelper::spinnerUpdate();
+                    }
+                    if(count($buffer) >= $chunkSize){
+                        foreach($buffer as $record){
+                            // let it throw exception if failed, and let the caller handle it. This is to ensure that the transfer process stops immediately when an error occurs, and the caller can decide how to handle the error (e.g., log it, retry, etc.).
+                            OprDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($record));
+                            $count++;
+                        }
+                        OprDB::commit();
+                        $buffer = [];
+                        OprDB::beginTransaction();
+                    }
                 }
+                // Flush remaining records
+                foreach($buffer as $record){
+                    OprDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($record));
+                    $count++;
+                }
+                OprDB::commit();
                 $operationRecord['rows'] = $count;
                 if(self::isCli()){
-                    echo "\033[38;5;22mTransfer completed.\033[0m \033[38;5;3m".$count."\033[0m rows transfered.".PHP_EOL;
+                    TerminalHelper::spinnerFinish(TerminalHelper::color('green', 'Transfer completed.').' '.TerminalHelper::color('yellow', number_format($count)).' rows transfered.');
                 }
             }
             $operationRecord['success'] = true;
+            usleep(100000); // sleep for 0.1 second to allow user to recognize the progress of the transfer. This is to avoid overwhelming the user with too much information at once, and to give them a chance to see the progress of each operation. The sleep time can be adjusted based on user preference or system performance.
             yield $operationRecord;
         }
     }
@@ -230,19 +253,41 @@ class R3T{
         foreach(OperationManager::$operationList as $operation){
             if($operation instanceof SettleOperation){
                 if(self::isCli()){
-                    echo $operation->id.' : '."\033[38;5;14mStarted...\033[0m ";
+                    TerminalHelper::spinnerStart($operation->id.' : '.TerminalHelper::color('cyan', 'Started... '));
                 }
                 $data = OprDB::selectUnbuffered($operation->selectQueryFromPrevious());
                 $newData = $operation->transform($data);
                 $count = 0;
+                $chunkSize = 1024; // number of rows to insert at once, to reduce the number of queries and improve performance. Has to be adjustable based on memory and stuff, atm is fixed.
+                $buffer = [];
+                TrgtDB::beginTransaction();
                 foreach($newData as $newRecord){
-                    TrgtDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($newRecord));
-                    $count++; // count() function does not work on generators, so we have to manually count the rows inserted.
+                    $buffer[] = $newRecord;
+                    if(self::isCli()){
+                        TerminalHelper::spinnerUpdate();
+                    }
+                    if(count($buffer) >= $chunkSize){
+                        foreach($buffer as $record){
+                            // let it throw exception if failed, and let the caller handle it. This is to ensure that the transfer process stops immediately when an error occurs, and the caller can decide how to handle the error (e.g., log it, retry, etc.).
+                            TrgtDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($record));
+                            $count++;
+                        }
+                        TrgtDB::commit();
+                        $buffer = [];
+                        TrgtDB::beginTransaction();
+                    }
                 }
+                // Flush remaining records
+                foreach($buffer as $record){
+                    TrgtDB::run($operation->tableConfig->inserter->query, DBQueryFormatter::prependColon($record));
+                    $count++;
+                }
+                TrgtDB::commit();
                 if(self::isCli()){
-                    echo "\033[38;5;2mSettle completed.\033[0m \033[38;5;3m".$count."\033[0m rows settled.".PHP_EOL;
+                    TerminalHelper::spinnerFinish(TerminalHelper::color('green', 'Settle completed.').' '.TerminalHelper::color('yellow', number_format($count)).' rows settled.');
                 }
             }
+            usleep(100000); // sleep for 0.1 second to allow user to recognize the progress of the settle. This is to avoid overwhelming the user with too much information at once, and to give them a chance to see the progress of each operation. The sleep time can be adjusted based on user preference or system performance.
         }
         return true;
     }

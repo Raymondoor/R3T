@@ -88,6 +88,9 @@ abstract class Database{
 	public static function beginTransaction():bool{
 		return static::getConnection()->beginTransaction();
 	}
+	public static function commit():bool{
+		return static::getConnection()->commit();
+	}
 	public static function rollback():bool{
 		return static::getConnection()->rollBack();
 	}

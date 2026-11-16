@@ -28,3 +28,5 @@ It would be better to implement an `analyze()` method to each operation rather t
     A consumable OperationAnalyzer helper class may be a good starting point, although the above method itlsef belongs to Operation.
 
 Do I even have to implement my own schema builder? as in query formatter etc. I can just use doctorine/DBAL and get only the query, then just run that using my own PDO wrapper.
+
+We definately have to use transaction to optimize insertion, otherwise it would take years

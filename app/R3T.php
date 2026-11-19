@@ -100,7 +100,9 @@ class R3T{
                 'previous' => is_null($operation->exception->getPrevious()) ? null : $operation->exception->getPrevious()::class
             ];
             if(self::isCli()){
-                echo $operation->id.' : '.TerminalHelper::color('blue', 'Analyzing... ');
+                echo $operation->id.' : ';
+                echo TerminalHelper::color('magenta', ($operation->label) ?? 'Run '.$operation->id);
+                echo " ".TerminalHelper::color('blue', 'Analyzing... ');
                 if(is_null($operation->exception)){
                     echo TerminalHelper::color('green', 'OK').PHP_EOL;
                 }else{
